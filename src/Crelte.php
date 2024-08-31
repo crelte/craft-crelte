@@ -9,8 +9,10 @@ use craft\base\Plugin;
 use craft\events\RegisterGqlQueriesEvent;
 use craft\events\RegisterGqlTypesEvent;
 use craft\events\RegisterGqlSchemaComponentsEvent;
+use craft\events\RegisterCpAlertsEvent;
 use craft\services\Gql;
 use craft\gql\GqlEntityRegistry;
+use craft\helpers\{Cp, Html, UrlHelper};
 use crelte\crelte\models\Settings;
 use crelte\crelte\gql\queries\SitesQuery;
 
@@ -23,6 +25,14 @@ use crelte\crelte\gql\queries\SitesQuery;
 class Crelte extends Plugin
 {
 	public string $schemaVersion = "1.0.0";
+
+	const EDITION_SOLO = "solo";
+	const EDITION_PRO = "pro";
+
+	public static function editions(): array
+	{
+		return [self::EDITION_SOLO, self::EDITION_PRO];
+	}
 
 	public function init()
 	{
@@ -60,6 +70,37 @@ class Crelte extends Plugin
 				];
 			}
 		);
+
+		Event::on(Cp::class, Cp::EVENT_REGISTER_ALERTS, function (
+			RegisterCpAlertsEvent $event
+		) {
+			if (
+				self::getInstance()->is(self::EDITION_PRO) ||
+				Craft::$app->getEdition() === Craft::Solo
+			) {
+				return;
+			}
+
+			$event->alerts[] = [
+				"content" =>
+					Html::tag("h2", "Edition change required") .
+					Html::tag(
+						"p",
+						"The Solo edition is only available in combination with Craft Solo"
+					) .
+					// can't use Html::a() because it's encoding &amp;'s, which is causing issues
+					Html::beginTag("p", [
+						"class" => ["flex", "flex-nowrap"],
+					]) .
+					sprintf(
+						'<a class="go" href="%s">%s</a>',
+						UrlHelper::cpUrl("plugin-store/craft-crelte"),
+						Craft::t("app", "Resolve now")
+					) .
+					Html::endTag("p"),
+				"showIcon" => false,
+			];
+		});
 	}
 
 	protected function createSettingsModel(): ?Model
