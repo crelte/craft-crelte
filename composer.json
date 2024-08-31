@@ -1,0 +1,41 @@
+{
+	"name": "crelte/craft-crelte",
+	"description": "Craft and Svelte",
+	"type": "craft-plugin",
+	"license": "proprietary",
+	"support": {
+		"source": "https://github.com/crelte/craft-crelte"
+	},
+	"authors": [
+		{
+			"name": "Crelte",
+			"homepage": "https://crelte.com"
+		}
+	],
+	"require": {
+		"php": ">=8.0.2",
+		"craftcms/cms": "^4.4.8 || ^5.0.0"
+	},
+	"autoload": {
+		"psr-4": {
+			"crelte\\crelte\\": "src/"
+		}
+	},
+	"extra": {
+		"handle": "craft-crelte",
+		"name": "Crelte",
+		"developer": "Crelte",
+		"documentationUrl": "",
+		"class": "crelte\\crelte\\Crelte"
+	},
+	"config": {
+		"sort-packages": true,
+		"platform": {
+			"php": "8.0.2"
+		},
+		"allow-plugins": {
+			"yiisoft/yii2-composer": true,
+			"craftcms/plugin-installer": true
+		}
+	}
+}
