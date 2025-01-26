@@ -14,7 +14,7 @@ use craft\services\Gql;
 use craft\gql\GqlEntityRegistry;
 use craft\helpers\{Cp, Html, UrlHelper};
 use crelte\crelte\models\Settings;
-use crelte\crelte\gql\queries\SitesQuery;
+use crelte\crelte\gql\queries\{SitesQuery, StarterQuery};
 
 /**
  * craft-crelte plugin
@@ -38,10 +38,12 @@ class Crelte extends Plugin
 	{
 		parent::init();
 
+		$inDevMode = Craft::$app->getConfig()->getGeneral()->devMode;
+
 		// Handler: Gql::EVENT_REGISTER_GQL_TYPES
 		Event::on(Gql::class, Gql::EVENT_REGISTER_GQL_TYPES, static function (
 			RegisterGqlTypesEvent $event
-		) {
+		) use ($inDevMode) {
 			GqlEntityRegistry::createEntity(
 				"CrelteSiteGroup",
 				SitesQuery::getSiteGroupType()
@@ -50,14 +52,26 @@ class Crelte extends Plugin
 				"CrelteSite",
 				SitesQuery::getSiteType()
 			);
+
+			if ($inDevMode) {
+				GqlEntityRegistry::createEntity(
+					"CrelteStarterEntry",
+					StarterQuery::getEntryType()
+				);
+				GqlEntityRegistry::createEntity(
+					"CrelteStarterGlobal",
+					StarterQuery::getGlobalType()
+				);
+			}
 		});
 
 		Event::on(Gql::class, Gql::EVENT_REGISTER_GQL_QUERIES, function (
 			RegisterGqlQueriesEvent $event
-		) {
+		) use ($inDevMode) {
 			$event->queries = array_merge(
 				$event->queries,
-				SitesQuery::getQueries()
+				SitesQuery::getQueries(),
+				$inDevMode ? StarterQuery::getQueries() : []
 			);
 		});
 
