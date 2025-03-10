@@ -3,7 +3,11 @@
 namespace crelte\crelte\gql\queries;
 
 use Craft;
-use crelte\crelte\gql\resolvers\{StarterEntryResolver, StarterGlobalsResolver};
+use crelte\crelte\gql\resolvers\{
+	StarterEntryResolver,
+	StarterGlobalsResolver,
+	StarterGlobalResolver
+};
 use crelte\crelte\helpers\Gql as GqlHelper;
 use GraphQL\Type\Definition\{Type, ObjectType};
 use craft\gql\GqlEntityRegistry;
@@ -27,6 +31,7 @@ class StarterQuery extends Query
 				"resolve" => StarterEntryResolver::class . "::resolve",
 				"description" => "This query is used as a starter query",
 			],
+			// this is deprecated and will be removed in the future
 			"crelteStarterGlobals" => [
 				"type" => Type::listOf(
 					GqlEntityRegistry::getEntity("CrelteStarterGlobal")
@@ -36,6 +41,15 @@ class StarterQuery extends Query
 					"siteId" => Type::listOf(QueryArgument::getType()),
 				],
 				"resolve" => StarterGlobalsResolver::class . "::resolve",
+				"description" => "This query is used as a starter query",
+			],
+			"crelteStarterGlobal" => [
+				"type" => GqlEntityRegistry::getEntity("CrelteStarterGlobal"),
+				"args" => [
+					"handle" => Type::string(),
+					"siteId" => Type::listOf(QueryArgument::getType()),
+				],
+				"resolve" => StarterGlobalResolver::class . "::resolve",
 				"description" => "This query is used as a starter query",
 			],
 		];
