@@ -3,6 +3,8 @@
 namespace crelte\crelte;
 
 use Craft;
+use craft\base\Element;
+use craft\helpers\App;
 use yii\base\Event;
 use craft\base\Model;
 use craft\base\Plugin;
@@ -13,6 +15,9 @@ use craft\events\RegisterCpAlertsEvent;
 use craft\services\Gql;
 use craft\gql\GqlEntityRegistry;
 use craft\helpers\{Cp, Html, UrlHelper};
+use craft\web\Application;
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
 use crelte\crelte\models\Settings;
 use crelte\crelte\gql\queries\{SitesQuery, StarterQuery};
 
@@ -25,6 +30,8 @@ use crelte\crelte\gql\queries\{SitesQuery, StarterQuery};
 class Crelte extends Plugin
 {
 	public string $schemaVersion = "1.0.0";
+
+	private bool $webhookRequested = false;
 
 	const EDITION_SOLO = "solo";
 	const EDITION_PRO = "pro";
@@ -115,6 +122,83 @@ class Crelte extends Plugin
 				"showIcon" => false,
 			];
 		});
+
+		$frontendUrl = App::env("CRAFT_FRONTEND_URL") ?: null;
+		$token = App::env("ENDPOINT_TOKEN") ?: null;
+		if ($frontendUrl && $token) {
+			$this->enableQueriesWebhook($frontendUrl, $token);
+		}
+	}
+
+	private function enableQueriesWebhook(
+		string $frontendUrl,
+		string $token
+	): void {
+		// Listen for element save events
+		Event::on(Element::class, Element::EVENT_AFTER_SAVE, function (
+			Event $event
+		) {
+			// for this to work correctly you need to setup like
+			// https://github.com/craftcms/cms/pull/17024
+			$this->webhookRequested = true;
+		});
+
+		// Listen for element delete events
+		Event::on(Element::class, Element::EVENT_AFTER_DELETE, function (
+			Event $event
+		) {
+			$this->webhookRequested = true;
+		});
+
+		// Check after each request if webhook should be triggered
+		Event::on(
+			Application::class,
+			Application::EVENT_AFTER_REQUEST,
+			function () use ($frontendUrl, $token) {
+				if ($this->webhookRequested) {
+					$this->webhookRequested = false;
+					$this->callWebhook($frontendUrl, $token);
+				}
+			}
+		);
+	}
+
+	private function callWebhook(string $frontendUrl, string $token): void
+	{
+		try {
+			$client = new Client();
+			$webhookUrl = rtrim($frontendUrl, "/") . "/queries/webhook";
+
+			$response = $client->post($webhookUrl, [
+				"timeout" => 10,
+				"headers" => [
+					"Content-Type" => "application/json",
+					"Authorization" => "Bearer " . $token,
+				],
+				"json" => [
+					"timestamp" => time(),
+					"source" => "craft-crelte",
+				],
+			]);
+
+			if ($response->getStatusCode() >= 400) {
+				Craft::error(
+					"Webhook call failed with status: " .
+						$response->getStatusCode(),
+					__METHOD__
+				);
+			}
+		} catch (RequestException $e) {
+			Craft::error(
+				"Failed to call webhook: " . $e->getMessage(),
+				__METHOD__
+			);
+		} catch (\Exception $e) {
+			Craft::error(
+				"Unexpected error calling webhook: " . $e->getMessage(),
+				__METHOD__
+			);
+		}
 	}
 
 	protected function createSettingsModel(): ?Model
