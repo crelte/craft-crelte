@@ -104,7 +104,7 @@ class Crelte extends Plugin
 
 			$event->alerts[] = [
 				"content" =>
-					Html::tag("h2", "Edition change required") .
+				Html::tag("h2", "Edition change required") .
 					Html::tag(
 						"p",
 						"The Solo edition is only available in combination with Craft Solo"
@@ -123,9 +123,10 @@ class Crelte extends Plugin
 			];
 		});
 
-		$frontendUrl = App::env("CRAFT_FRONTEND_URL") ?: null;
+		$enableCaching = App::env("CACHING") === "true";
+		$frontendUrl = App::env("CRAFT_FRONTEND_URL") ?: App::env("FRONTEND_URL") ?: null;
 		$token = App::env("ENDPOINT_TOKEN") ?: null;
-		if ($frontendUrl && $token) {
+		if ($enableCaching && $frontendUrl && $token) {
 			$this->enableQueriesWebhook($frontendUrl, $token);
 		}
 	}
@@ -140,6 +141,7 @@ class Crelte extends Plugin
 		) {
 			// for this to work correctly you need to setup like
 			// https://github.com/craftcms/cms/pull/17024
+			// */5 * * * *
 			$this->webhookRequested = true;
 		});
 
