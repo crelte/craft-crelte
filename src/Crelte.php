@@ -123,7 +123,7 @@ class Crelte extends Plugin
 			];
 		});
 
-		$enableCaching = App::env("CACHING") === "true";
+		$enableCaching = App::env("CACHING");
 		$frontendUrl = App::env("CRAFT_FRONTEND_URL") ?: App::env("FRONTEND_URL") ?: null;
 		$token = App::env("ENDPOINT_TOKEN") ?: null;
 		if ($enableCaching && $frontendUrl && $token) {
