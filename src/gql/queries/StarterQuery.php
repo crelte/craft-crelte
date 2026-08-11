@@ -62,6 +62,7 @@ class StarterQuery extends Query
 			"fields" => [
 				"id" => Type::int(),
 				"siteId" => Type::int(),
+				"url" => Type::string(),
 				"sectionHandle" => Type::string(),
 				"typeHandle" => Type::string(),
 				"title" => Type::string(),

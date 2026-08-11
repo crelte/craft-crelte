@@ -24,6 +24,7 @@ class StarterEntryResolver extends Resolver
 		return [
 			"id" => 1,
 			"siteId" => (int) $siteId,
+			"url" => UrlHelper::siteUrl(),
 			"sectionHandle" => "crelte",
 			"typeHandle" => "starter",
 			"title" => "title",
