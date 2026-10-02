@@ -4,6 +4,7 @@ namespace crelte\crelte\gql\resolvers;
 
 use Craft;
 use craft\gql\base\Resolver;
+use yii\web\BadRequestHttpException;
 
 use GraphQL\Type\Definition\ResolveInfo;
 
@@ -15,10 +16,29 @@ class SitesResolver extends Resolver
 		mixed $context,
 		ResolveInfo $resolveInfo
 	): mixed {
+		$sitesService = Craft::$app->getSites();
+		$availableSites = $sitesService->getAllSites(false);
+		$request = Craft::$app->getRequest();
+		$siteToken = $request->getIsConsoleRequest() ? null : $request->getSiteToken();
+
+		if ($siteToken) {
+			$siteId = Craft::$app->getSecurity()->validateData($siteToken);
+			$previewSite = is_numeric($siteId)
+				? $sitesService->getSiteById((int)$siteId, true)
+				: null;
+
+			if (!$previewSite) {
+				throw new BadRequestHttpException("Invalid site token");
+			}
+			if (!$previewSite->enabled) {
+				$availableSites[] = $previewSite;
+			}
+		}
+
 		$sites = [];
 
-		foreach (Craft::$app->sites->allSites as $site) {
-			if (!$site->enabled || !$site->hasUrls) {
+		foreach ($availableSites as $site) {
+			if (!$site->hasUrls) {
 				continue;
 			}
 
